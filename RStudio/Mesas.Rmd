@@ -1,0 +1,104 @@
+---
+title: "Mapa de México con Total de Votos por Estado"
+output: html_notebook
+---
+
+En este codigo se realisa el mapeo de los votos totales por estado de Mexico
+
+```{r}
+# carga las librerias 
+library(sf)
+library(dplyr) 
+library(tmap)
+```
+
+```{r}
+# Lee GeoJSON de estados
+estados <- st_read("GeoJSON - Estados.json")
+```
+
+```{r}
+# Verifica y correge geometrías inválidas
+estados_validos <- estados %>%
+  st_make_valid()
+```
+
+```{r}
+# Lee el CSV
+resultado_mesas <- read.csv("resultado_mesas_1.csv")
+head(resultado_mesas)
+```
+
+```{r}
+# Camba el nombre de los estados para que los tengan los mismos nombres 
+nombres_correctos <- c(
+  "CD MEXICO" = "Distrito Federal",
+  "MEXICO" = "México",
+  "VERACRUZ" = "Veracruz de Ignacio de la Llave",
+  "TABASCO" = "Tabasco",
+  "PUEBLA" = "Puebla",
+  "JALISCO" = "Jalisco",
+  "CHIAPAS" = "Chiapas",
+  "GUERRERO" = "Guerrero",
+  "OAXACA" = "Oaxaca",
+  "GUANAJUATO" = "Guanajuato",
+  "BAJA CALIFORNIA" = "Baja California",
+  "MICHOACAN" = "Michoacán de Ocampo",
+  "NUEVO LEON" = "Nuevo León",
+  "QUERETARO" = "Querétaro",
+  "TAMAULIPAS" = "Tamaulipas",
+  "HIDALGO" = "Hidalgo",
+  "YUCATAN" = "Yucatán",
+  "MORELOS" = "Morelos",
+  "COAHUILA" = "Coahuila de Zaragoza",
+  "SAN LUIS POTOSI" = "San Luis Potosí",
+  "CHIHUAHUA" = "Chihuahua",
+  "SONORA" = "Sonora",
+  "SINALOA" = "Sinaloa",
+  "QUINTANA ROO" = "Quintana Roo",
+  "CAMPECHE" = "Campeche",
+  "DURANGO" = "Durango",
+  "AGUASCALIENTES" = "Aguascalientes",
+  "TLAXCALA" = "Tlaxcala",
+  "BAJA CALIFORNIA SUR" = "Baja California Sur",
+  "COLIMA" = "Colima",
+  "NAYARIT" = "Nayarit",
+  "ZACATECAS" = "Zacatecas"
+)
+
+resultado_mesas$estado <- nombres_correctos[resultado_mesas$estado]
+```
+
+```{r}
+# Suma total de votos por estado
+datos_mapeo <- resultado_mesas %>%
+  group_by(estado) %>%
+  summarise(total_votos = sum(total))
+head(datos_mapeo)
+```
+
+```{r}
+# Fusiona datos de votos con datos geoespaciales del estados
+mapa_estados <- merge(datos_mapeo, estados_validos, by.x = "estado", by.y = "nom_ent")
+head(mapa_estados)
+```
+
+```{r}
+# Convertir mapa_estados a clase sf
+mapa_sf <- st_as_sf(mapa_estados)
+```
+
+```{r}
+# Mapear el total de votos por estado
+tmap_mode("view")
+tm_shape(mapa_sf) +
+  tm_polygons("total_votos", palette = "YlOrRd", style = "quantile", 
+              breaks = c(0, 5000, 10000, 20000, 50000, 100000, 200000, max(mapa_sf$total_votos)),
+              title = "Total de Votos", legend.hist = TRUE) +
+  tm_borders("grey25", alpha = 0.5) +
+  tm_layout(main.title = "Total de Votos por Estado", 
+            main.title.position = "center")
+```
+
+
+
