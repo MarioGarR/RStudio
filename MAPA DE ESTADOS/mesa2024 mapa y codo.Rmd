@@ -1,0 +1,226 @@
+```{r}
+# Carga de librerías 
+library(sf)
+library(dplyr) 
+library(tmap)
+library(ggplot2)
+library(factoextra)
+```
+
+```{r}
+# Lee el archivo GeoJSON de los estados
+estados <- st_read("GeoJSON - Estados.json")
+estados_validos <- estados %>%
+  st_make_valid()
+```
+
+```{r}
+resultado_mesas <- read.csv("resultado_mesas_1.csv")
+
+#los nombres de los estados nuevos
+resultado_mesas$estado <- tolower(resultado_mesas$estado)
+
+nombres_correctos <- c(
+  "cd mexico" = "Distrito Federal",
+  "mexico" = "México",
+  "veracruz" = "Veracruz de Ignacio de la Llave",
+  "tabasco" = "Tabasco",
+  "puebla" = "Puebla",
+  "jalisco" = "Jalisco",
+  "chiapas" = "Chiapas",
+  "guerrero" = "Guerrero",
+  "oaxaca" = "Oaxaca",
+  "guanajuato" = "Guanajuato",
+  "baja california" = "Baja California",
+  "michoacan" = "Michoacán de Ocampo",
+  "nuevo leon" = "Nuevo León",
+  "queretaro" = "Querétaro",
+  "tamaulipas" = "Tamaulipas",
+  "hidalgo" = "Hidalgo",
+  "yucatan" = "Yucatán",
+  "morelos" = "Morelos",
+  "coahuila" = "Coahuila de Zaragoza",
+  "san luis potosi" = "San Luis Potosí",
+  "chihuahua" = "Chihuahua",
+  "sonora" = "Sonora",
+  "sinaloa" = "Sinaloa",
+  "quintana roo" = "Quintana Roo",
+  "campeche" = "Campeche",
+  "durango" = "Durango",
+  "aguascalientes" = "Aguascalientes",
+  "tlaxcala" = "Tlaxcala",
+  "baja california sur" = "Baja California Sur",
+  "colima" = "Colima",
+  "nayarit" = "Nayarit",
+  "zacatecas" = "Zacatecas"
+)
+
+resultado_mesas$estado <- nombres_correctos[resultado_mesas$estado]
+
+datos_mapeo <- resultado_mesas %>%
+  group_by(estado) %>%
+  summarise(total_votos = sum(total))
+
+mapa_estados <- merge(datos_mapeo, estados_validos, by.x = "estado", by.y = "nom_ent")
+mapa_sf <- st_as_sf(mapa_estados)
+
+tmap_mode("view")
+tm_shape(mapa_sf) +
+  tm_polygons("total_votos", palette = "YlOrRd", style = "quantile", 
+              breaks = c(0, 5000, 10000, 20000, 50000, 100000, 200000, max(mapa_sf$total_votos)),
+              title = "Total de Votos", legend.hist = TRUE) +
+  tm_borders("grey25", alpha = 0.5) +
+  tm_layout(main.title = "Total de Votos por Estado", 
+            main.title.position = "center")
+```
+
+```{r}
+PIB <- read.csv("PIB.csv")
+
+mapa_PIB <- merge(mapa_sf, PIB, by.x = "gid", by.y = "no")
+
+mapa_PIB <- mapa_PIB[complete.cases(mapa_PIB$total_votos) & complete.cases(mapa_PIB$PIB),]
+```
+
+```{r}
+PIBcros <- read.csv("PIBCROS.csv")
+Votcros <- read.csv("total_votos.csv")
+```
+
+```{r}
+# Crear vectores con los valores promedio
+rendimientos <- c(
+  mean(PIBcros$Aguascalientes),
+  mean(PIBcros$Baja.California),
+  mean(PIBcros$Baja.California.Sur),
+  mean(PIBcros$Campeche),
+  mean(PIBcros$Coahuila.de.Zaragoza),
+  mean(PIBcros$Colima),
+  mean(PIBcros$Chiapas),
+  mean(PIBcros$Chihuahua),
+  mean(PIBcros$Distrito.Federal),
+  mean(PIBcros$Durango),
+  mean(PIBcros$Guanajuato),
+  mean(PIBcros$Guerrero),
+  mean(PIBcros$Hidalgo),
+  mean(PIBcros$Jalisco),
+  mean(PIBcros$México),
+  mean(PIBcros$Michoacán.de.Ocampo),
+  mean(PIBcros$Morelos),
+  mean(PIBcros$Nayarit),
+  mean(PIBcros$Nuevo.León),
+  mean(PIBcros$Oaxaca),
+  mean(PIBcros$Puebla),
+  mean(PIBcros$Querétaro),
+  mean(PIBcros$Quintana.Roo),
+  mean(PIBcros$San.Luis.Potosí),
+  mean(PIBcros$Sinaloa),
+  mean(PIBcros$Sonora),
+  mean(PIBcros$Tabasco),
+  mean(PIBcros$Tamaulipas),
+  mean(PIBcros$Tlaxcala),
+  mean(PIBcros$Veracruz.de.Ignacio.de.la.Llave),
+  mean(PIBcros$Yucatán),
+  mean(PIBcros$Zacatecas)
+)
+
+betas <- c(
+  mean(Votcros$Aguascalientes),
+  mean(Votcros$Baja.California),
+  mean(Votcros$Baja.California.Sur),
+  mean(Votcros$Campeche),
+  mean(Votcros$Coahuila.de.Zaragoza),
+  mean(Votcros$Colima),
+  mean(Votcros$Chiapas),
+  mean(Votcros$Chihuahua),
+  mean(Votcros$Distrito.Federal),
+  mean(Votcros$Durango),
+  mean(Votcros$Guanajuato),
+  mean(Votcros$Guerrero),
+  mean(Votcros$Hidalgo),
+  mean(Votcros$Jalisco),
+  mean(Votcros$México),
+  mean(Votcros$Michoacán.de.Ocampo),
+  mean(Votcros$Morelos),
+  mean(Votcros$Nayarit),
+  mean(Votcros$Nuevo.León),
+  mean(Votcros$Oaxaca),
+  mean(Votcros$Puebla),
+  mean(Votcros$Querétaro),
+  mean(Votcros$Quintana.Roo),
+  mean(Votcros$San.Luis.Potosí),
+  mean(Votcros$Sinaloa),
+  mean(Votcros$Sonora),
+  mean(Votcros$Tabasco),
+  mean(Votcros$Tamaulipas),
+  mean(Votcros$Tlaxcala),
+  mean(Votcros$Veracruz.de.Ignacio.de.la.Llave),
+  mean(Votcros$Yucatán),
+  mean(Votcros$Zacatecas)
+)
+
+# Escala los datos
+PIB2 <- scale(rendimientos)
+VOTOS2 <- scale(betas)
+
+# Crea los data frames con los datos escalados
+midatae <- data.frame(PIB2,VOTOS2)
+
+# Realiza el clustering
+km_clusters <- kmeans(midatae, centers = 4, nstart = 50)
+
+  theme_bw() +
+  theme(legend.title = element_text("Clusters"),
+        legend.position = "bottom") 
+
+ggplot(midatae, aes(x = PIB2, y = VOTOS2, color = as.factor(km_clusters$cluster))) + 
+  geom_point() +
+  ggtitle('Conjunto de Datos con Colores por Clúster') + 
+  xlab('PIB') + 
+  ylab('Votos') +
+  guides(color = guide_legend(title = "Clusters"))
+```
+
+```{r}
+# Escala los datos
+PIB2 <- scale(rendimientos)
+VOTOS2 <- scale(betas)
+
+# Crea los data frames con los datos escalados
+midatae <- data.frame(PIB2,VOTOS2)
+
+# Realiza el clustering
+km_clusters <- kmeans(midatae, centers = 5, nstart = 50)
+
+  theme_bw() +
+  theme(legend.title = element_text("Clusters"),
+        legend.position = "bottom") 
+ # Visualización de los clusters
+  fviz_cluster(object = km_clusters, data = midatae, show.clust.cent = TRUE,
+               ellipse.type = "euclid", star.plot = TRUE, repel = TRUE) +
+    labs(title = "Resultados de agrupación K-means") +
+    theme_bw() +
+    theme(legend.title = element_text("Clusters"),
+          legend.position = "bottom") + 
+  xlab('PIB') + 
+  ylab('Votos') +
+  guides(color = guide_legend(title = "Clusters"))
+
+```
+
+```{r}
+set.seed(1234)
+wcss <- vector()
+for(i in 2:10){
+  wcss[i] <- sum(kmeans(mapa_PIB$PIB, centers = i)$tot.withinss)
+}
+
+ggplot() + 
+  geom_point(aes(x = 2:10, y = wcss[2:10]), color = 'red') + 
+  geom_line(aes(x = 2:10, y = wcss[2:10]), color = 'blue') +
+  ggtitle("Método del Codo") + 
+  xlab('PIB') + 
+  ylab('VOTO')
+```
+
+
