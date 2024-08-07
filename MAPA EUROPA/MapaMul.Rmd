@@ -1,0 +1,148 @@
+---
+title: "Mapa de Europa con Total de Musulmanes"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+En este documento se generan mapas que muestran el total de poblacion el total de poblacion musulmana y el porcentaje de poblacion musulmana en cada pais de Europa.
+
+```{r}
+# Carga las librerias
+library(sf)
+library(dplyr) 
+library(tmap)
+```
+
+```{r}
+# Carga el archivo GeoJSON 
+MapE <- st_read("EUROPA.geojson")
+head(MapE)
+```
+
+```{r}
+map_valido <- MapE %>%
+  st_make_valid()
+```
+
+```{r}
+# Cambia los nombres de los paises del ingles al español
+mapCorregido <- c(
+  "Azerbaijan" = "Azerbaiyan",
+  "Albania" = "Albania",
+  "Armenia" = "Armenia",
+  "Bosnia and Herzegovina" = "Bosnia y Herzegovina",
+  "Bulgaria" = "Bulgaria",
+  "Cyprus" = "Chipre",
+  "Denmark" = "Dinamarca",
+  "Ireland" = "Irlanda",
+  "Estonia" = "Estonia",
+  "Austria" = "Austria",
+  "Czech Republic" = "Republica Checa",
+  "Finland" = "Finlandia",
+  "France" = "Francia",
+  "Georgia" = "Georgia",
+  "Germany" = "Alemania",
+  "Greece" = "Grecia",
+  "Croatia" = "Croacia",
+  "Hungary" = "Hungria",
+  "Iceland" = "Islandia",
+  "Israel" = "Israel",
+  "Italy" = "Italia",
+  "Latvia" = "Letonia",
+  "Belarus" = "Bielorrusia",
+  "Lithuania" = "Lituania",
+  "Slovakia" = "Eslovaquia",
+  "Liechtenstein" = "Liechtenstein",
+  "The former Yugoslav Republic of Macedonia" = "Macedonia del Norte",
+  "Malta" = "Malta",
+  "Belgium" = "Belgica",
+  "Andorra" = "Andorra",
+  "Luxembourg" = "Luxemburgo",
+  "Monaco" = "Monaco",
+  "Montenegro" = "Montenegro",
+  "Netherlands" = "Paises Bajos",
+  "Norway" = "Noruega",
+  "Poland" = "Polonia",
+  "Portugal" = "Portugal",
+  "Romania" = "Rumania",
+  "Republic of Moldova" = "Moldavia",
+  "Slovenia" = "Eslovenia",
+  "Spain" = "España",
+  "Sweden" = "Suecia",
+  "Switzerland" = "Suiza",
+  "Turkey" = "Turquia",
+  "United Kingdom" = "Reino Unido",
+  "Ukraine" = "Ucrania",
+  "San Marino" = "San Marino",
+  "Serbia" = "Serbia",
+  "Holy See (Vatican City)" = "Vaticano",
+  "Russia" = "Rusia"
+)
+
+map_valido$NAME <- mapCorregido[map_valido$NAME]
+head(map_valido)
+```
+
+```{r}
+# Carga el archivo CSV
+PoblacionMul <- read.csv("PoblacioMul.csv")
+head(PoblacionMul)
+```
+
+```{r}
+PoblacionMul <- PoblacionMul %>%
+  mutate(PorcentajeMusulmana = (POBLACIÓN_MUSULMANA / POBLACION) * 100)
+head(PoblacionMul)
+```
+
+```{r}
+# Fusiona los datos
+mapa_MUL <- merge(PoblacionMul, map_valido, by.x = "Pais", by.y = "NAME")
+head(mapa_MUL)
+```
+
+```{r}
+mapa_sf <- st_as_sf(mapa_MUL)
+```
+
+```{r}
+# Visualización de los mapas
+tmap_mode("view")
+```
+
+## Mapa del Total de Población Musulmana
+
+```{r}
+tm_shape(mapa_sf) +
+  tm_polygons("POBLACIÓN_MUSULMANA", 
+              palette = "Blues", 
+              style = "quantile",
+              title = "POBLACIÓN MUSULMANA") +
+  tm_text("Pais", size = 0.65, col = "black") 
+```
+
+## Mapa del Total de Población
+
+```{r}
+tm_shape(mapa_sf) +
+  tm_polygons("POBLACION",
+              palette = "Purples", 
+              style = "quantile", 
+              title = "POBLACIÓN TOTAL") +
+  tm_text("Pais", size = 0.65, col = "black") +
+  tm_legend(legend.outside = TRUE) +
+  tm_layout(legend.format = list(fun = function(x) formatC(x, big.mark = ",", format = "f", digits = 0)))
+```
+
+## Mapa del Porcentaje de Población Musulmana
+
+```{r}
+tm_shape(mapa_sf) +
+  tm_polygons("PorcentajeMusulmana", 
+              palette = "Greens", 
+              style = "quantile", 
+              title = "PORCENTAJE DE POBLACIÓN MUSULMANA") +
+  tm_text("Pais", size = 0.65, col = "black") 
+```
